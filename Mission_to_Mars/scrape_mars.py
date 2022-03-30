@@ -1,23 +1,14 @@
-from flask import Flask
+from flask import Flask, render_template
 import pymongo
 from splinter import Browser
 from bs4 import BeautifulSoup
 from webdriver_manager.chrome import ChromeDriverManager
-import pandas as pd
+#import pandas as pd
 
 conn = 'mongodb://localhost:27017'
 client = pymongo.MongoClient(conn)
 
 app = Flask(__name__)
-
-
-
-
-
-@app.route("/")
-def home():
-    print("Server received request for 'Home' page...")
-    return "Welcome to my 'Home' page!"
 
 @app.route("/scrape")
 def scrape():
@@ -31,12 +22,12 @@ def scrape():
     soup = BeautifulSoup(html,'html.parser')
 
 
-    results = soup.find('div', class_='container')
+    results = soup.find('div', id='news')
 
 
     for result in results:
-        title = soup.find('div', class_='content_title')
-        article = soup.find('div', class_='article_teaser_body')
+        title = soup.find('div', class_='content_title').text
+        article = soup.find('div', class_='article_teaser_body').text
 
 
     url = "https://spaceimages-mars.com"
@@ -75,16 +66,16 @@ def scrape():
         rows.append(row.text)
 
 
-    mars_df = pd.DataFrame({
-        'Mars Stats' : rows[1:],
-        '' : facts[1:]
-    })
+    #mars_df = pd.DataFrame({
+    #    'Mars Stats' : rows[1:],
+    #    '' : facts[1:]
+    #})
 
-    mars_df.set_index('Mars Stats', inplace=True)
-    mars_df
+    #mars_df.set_index('Mars Stats', inplace=True)
+    #mars_df
 
 
-    mars_df.to_html('Mars_Table.html')
+    #mars_df.to_html('Mars_Table.html')
 
 
     url = "https://marshemispheres.com/"
@@ -128,10 +119,9 @@ def scrape():
         hemi_images.append(hemi_dict)
 
     scraped_data = {
-        'headline_title': title.text,
-        'headline_article': article.text,
+        'headline_title': title,
+        'headline_article': article,
         'featured_img': featured_image_url,
-        'table': mars_df,
         'hemispheres': hemi_images
     }
 
@@ -141,6 +131,17 @@ db = client.scrapeDB
 scrape_results = db.scrape_results.find()
 db.scrape_results.insert_one(scrape())
 
+@app.route("/")
+def home():
+    final_data = scrape_results
+    return render_template('index.html',final_data=final_data)
+    
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+#'headline_title': title,
+#'headline_article': article,
+#'featured_img': featured_image_url,
+#'hemispheres': hemi_images
